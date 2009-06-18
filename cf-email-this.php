@@ -3,7 +3,7 @@
 Plugin Name: CF Email This
 Plugin URI: http://crowdfavorite.com
 Description: Creates a nice 'Email-This' link with hooks to customize to your liking
-Version: 0.1 
+Version: 1.0 
 Author: Crowd Favorite
 Author URI: http://crowdfavorite.com
 */
