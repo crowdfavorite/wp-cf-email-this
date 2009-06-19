@@ -41,6 +41,18 @@ else {
 	define('CFET_TABLE_NAME',$wpdb->prefix.'email_this');
 }
 
+/* Should the plugin keep track of the stats?? */
+define('CFET_KEEP_STATS', apply_filters('cfet_keep_stats', true));
+
+/* Should the plugin show any admin page? */
+/* If you turn off the admin page, you have to filter the BODY and
+* 	ALT_BODY */
+define('CFET_SHOW_ADMIN_PAGE', apply_filters('cfet_show_admin_page', true));
+
+/* Should the plugin show the post meta box on the post/page edit screen
+* 	to allow for a specific post to be shown or not? */
+define('CFET_ALLOW_POST_META_BOX', apply_filters('cfet_show_post_meta_box', true));
+
 /**
  * cfet_setup_plugin
  *
@@ -51,39 +63,42 @@ else {
 function cfet_setup_plugin() {
 	global $wpdb;
 	
-	$charset_collate = '';
-	if (version_compare(mysql_get_server_info(), '4.1.0', '>=')) {
-		if (!empty($wpdb->charset)) {
-			$charset_collate .= " DEFAULT CHARACTER SET $wpdb->charset";
+	if (CFET_KEEP_STATS) {
+		/* Only create table if we need stats */
+		$charset_collate = '';
+		if (version_compare(mysql_get_server_info(), '4.1.0', '>=')) {
+			if (!empty($wpdb->charset)) {
+				$charset_collate .= " DEFAULT CHARACTER SET $wpdb->charset";
+			}
+			if (!empty($wpdb->collate)) {
+				$charset_collate .= " COLLATE $wpdb->collate";
+			}
 		}
-		if (!empty($wpdb->collate)) {
-			$charset_collate .= " COLLATE $wpdb->collate";
-		}
-	}
 	
-	// make db table now, to hold email info
-	$sql = '
-		CREATE TABLE IF NOT EXISTS '.CFET_TABLE_NAME.' (
-			`id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY, 
-			`user_id` BIGINT ( 20 ) NOT NULL ,
-			`to_name` VARCHAR( 100 ) NOT NULL ,
-			`to_email` VARCHAR( 150 ) NOT NULL ,
-			`site_id` BIGINT( 20 ) ,
-			`blog_id` BIGINT( 20 ) ,
-			`post_id` BIGINT( 20 ) ,
-			`time` BIGINT( 20 ) NOT NULL ,
-			INDEX blog_id ( `blog_id`, `post_id` ) ,
-			INDEX user_id ( `user_id` ) ,
-			INDEX to_name ( `to_name` )
-		) '.$charset_collate.'
-	';
-	$result = $wpdb->query($sql);
+		// make db table now, to hold email info
+		$sql = '
+			CREATE TABLE IF NOT EXISTS '.CFET_TABLE_NAME.' (
+				`id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+				`user_id` BIGINT ( 20 ) NOT NULL ,
+				`to_name` VARCHAR( 100 ) NOT NULL ,
+				`to_email` VARCHAR( 150 ) NOT NULL ,
+				`site_id` BIGINT( 20 ) ,
+				`blog_id` BIGINT( 20 ) ,
+				`post_id` BIGINT( 20 ) ,
+				`time` BIGINT( 20 ) NOT NULL ,
+				INDEX blog_id ( `blog_id`, `post_id` ) ,
+				INDEX user_id ( `user_id` ) ,
+				INDEX to_name ( `to_name` )
+			) '.$charset_collate.'
+		';
+		$result = $wpdb->query($sql);
+	}
 	
 	// Set default options now
 	add_option('cfet_email_subject','An article from '.get_option('blogname'));
 	add_option('cfet_email_from_name', 'Administrator');
 	add_option('cfet_email_from_address', get_bloginfo('admin_email'));
-	add_option('cfet_email_body', '');
+	add_option('cfet_email_body', '###PERSONAL_MESSAGE###');
 	add_option('cfet_email_personal_msg_header', 'Here\'s a message from your friend');
 	add_option('cfet_popup_who_to_info_header', 'Who are you sending this page to?');
 	add_option('cfet_popup_who_from_info_header', 'Tell us about yourself:');
@@ -161,15 +176,24 @@ function cfet_request_handler() {
 				$email_info['from_email'] = get_option('cfet_email_from_address');
 				$email_info['from_name'] = get_option('cfet_email_from_name');
 				
+
+				
 				/* Allow to change the email information */
 				$email_info = apply_filters('cfet_email_info', $email_info);
 				
+				/* Put together email's body */
+				$email_info['body'] = cfet_make_html_msg(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
+				$email_info['alt_body'] = cfet_make_text_msg(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
+				
+				/* validate then send */
 				if (!cfet_validate_fields($email_info)) {
 					// results already echo'd in validate function, just need to die
 					die();
 				}
 				if (cfet_send_email($email_info)) {
-					cfet_save_email($email_info);
+					if (CFET_KEEP_STATS) {
+						cfet_save_email($email_info);
+					}
 				}
 				die();
 			case 'cfet_email_review_details':
@@ -355,8 +379,6 @@ function cfet_save_email($email_info) {
  * @return bool true on mail sent success, bool false on mail send error
 */
 function cfet_send_email($email_info) {
-
-	
 	if (!class_exists('PHPMailer')) {
 		include_once(trailingslashit(ABSPATH).'wp-includes/class-phpmailer.php');
 	}				
@@ -367,8 +389,8 @@ function cfet_send_email($email_info) {
 	$cfet_email->From = $email_info['from_email'];
 	$cfet_email->FromName = $email_info['from_name'];
 	$cfet_email->IsHTML(true);
-	$cfet_email->Body = cfet_make_html_msg(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
-	$cfet_email->AltBody = cfet_make_text_msg(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
+	$cfet_email->Body = $email_info['body'];
+	$cfet_email->AltBody = $email_info['alt_body'];
 	if ($cfet_email->send()) {
 		echo '<h3>Message Sent Successfully!</h3>';
 		echo $cfet_email->ErrorInfo;
@@ -429,6 +451,7 @@ function cfet_make_html_msg($html, $email_info, $from_name = '', $from_email = '
  * 		apply_filters('cfet_make_text_msg', $out, $html, $personal_msg, $personal_msg_header, $from_name = '', $from_email = '');
 */
 function cfet_make_text_msg($html, $email_info, $from_name = '', $from_email = '') {
+	error_log('start of text msg::'.$email_info['personal_msg']);
 	$post = get_post($email_info['cfet_post_id']);
 	$html = str_replace(array('###POST_TITLE###','###POST_CONTENT###'), array($post->post_title, $post->post_content), $html);
 	if (empty($email_info['personal_msg'])) {
@@ -448,7 +471,7 @@ function cfet_make_text_msg($html, $email_info, $from_name = '', $from_email = '
 	$personal_msg_section = $separator.$personal_msg_header.$email_info['personal_msg'].$separator;
 	$html = str_replace('###PERSONAL_MESSAGE### ',$personal_msg_section,html_entity_decode($html));
 	$out = str_replace("\n","\n\n",str_replace("\n\n","\n",strip_tags($html)));
-	return apply_filters('cfet_make_text_msg', $out, $html, $email_info['personal_msg'], $personal_msg_header, $from_name = '', $from_email = '');
+	return apply_filters('cfet_make_text_msg', $out, $html, $email_info, $personal_msg_header, $from_name, $from_email);
 }
 
 wp_enqueue_script('thickbox');
@@ -732,19 +755,9 @@ function cfet_admin_head() {
 	</script>
 	<?php 
 }
-add_action('admin_head','cfet_admin_head');
-/*
-function cfet_admin_head_css() {
-	wp_enqueue_style('cfet_admin_css', trailingslashit(get_bloginfo('siteurl')).'?cf_action=cfet_admin_css', array(), '1.0', 'screen');
+if (CFET_SHOW_ADMIN_PAGE) {
+	add_action('admin_head','cfet_admin_head');
 }
-add_action('wp_print_styles', 'cfet_admin_head_css');
-
-function cfet_admin_head_js() {
-	wp_enqueue_script('tiny_mce',trailingslashit(get_bloginfo('wpurl')).'wp-includes/js/tinymce/tiny_mce.js');
-	wp_enqueue_script('cfet_admin_js',trailingslashit(get_bloginfo('siteurl')).'?cf_action=cfet_admin_js', array(), '1.0');
-}
-add_action('wp_print_scripts', 'cfet_admin_head_js');
-*/
 
 function cfet_admin_notice() {
 	if (get_option('cfet_email_body') == '') {
@@ -753,7 +766,9 @@ function cfet_admin_notice() {
 		add_action('admin_notices', create_function( '', "echo '$message';" ) );
 	}
 }
-add_action('admin_head','cfet_admin_notice');
+if (CFET_SHOW_ADMIN_PAGE) {
+	add_action('admin_head','cfet_admin_notice');
+}
 
 function cfet_admin_email_review() {
 	global $wpmu_version, $wpdb;
@@ -1205,7 +1220,9 @@ function cfet_add_custom_meta_box() {
 	add_meta_box('cfet_display_link', 'Add an Email This link?', 'cfet_post_meta_box', 'post', $cfet_meta_box_location, 'default');
 	add_meta_box('cfet_display_link', 'Add an Email This link?', 'cfet_post_meta_box', 'page', $cfet_meta_box_location, 'default');
 }
-add_action('admin_init', 'cfet_add_custom_meta_box');
+if (CFET_ALLOW_POST_META_BOX) {
+	add_action('admin_init', 'cfet_add_custom_meta_box');
+}
 
 function cfet_get_popular_info($item, $results) {
 	global $wpdb;
@@ -1383,20 +1400,24 @@ function cfet_setting($option) {
 
 function cfet_admin_menu() {
 	if (current_user_can('manage_options')) {
-		add_options_page(
-			__('CF Email This', 'cf-email-this')
-			, __('CF Email This', 'cf-email-this')
-			, 10
-			, basename(__FILE__)
-			, 'cfet_settings_form'
-		);
-		add_dashboard_page(
-			__('CF Email This Review', 'cf-email-this')
-			, __('CF Email This Review', ' cf-email-this')
-			, 10
-			, basename(__FILE__)
-			, 'cfet_admin_email_review'
-		);
+		if (CFET_SHOW_ADMIN_PAGE) {
+			add_options_page(
+				__('CF Email This', 'cf-email-this')
+				, __('CF Email This', 'cf-email-this')
+				, 10
+				, basename(__FILE__)
+				, 'cfet_settings_form'
+			);
+		}
+		if (CFET_KEEP_STATS) {
+			add_dashboard_page(
+				__('CF Email This Review', 'cf-email-this')
+				, __('CF Email This Review', ' cf-email-this')
+				, 10
+				, basename(__FILE__)
+				, 'cfet_admin_email_review'
+			);
+		}
 	}
 }
 add_action('admin_menu', 'cfet_admin_menu');
@@ -1409,7 +1430,9 @@ function cfet_plugin_action_links($links, $file) {
 	}
 	return $links;
 }
-add_filter('plugin_action_links', 'cfet_plugin_action_links', 10, 2);
+if (CFET_SHOW_ADMIN_PAGE) {
+	add_filter('plugin_action_links', 'cfet_plugin_action_links', 10, 2);
+}
 
 if (!function_exists('cf_settings_field')) {
 	function cf_settings_field($key, $config) {
