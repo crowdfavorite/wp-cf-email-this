@@ -151,6 +151,19 @@ function cfet_request_handler() {
 				$email_info['to_email'] = stripslashes(strip_tags($_POST['to_email']));
 				$email_info['personal_msg'] = stripslashes(strip_tags($_POST['personal_msg']));
 				$email_info['cfet_post_id'] = stripslashes(strip_tags($_POST['cfet_post_id']));
+				
+				/* Get user info */
+				global $user_ID;
+				$email_info['user_data'] = get_userdata($user_ID);
+				
+				/* Gather subject, etc... */
+				$email_info['subject'] = get_option('cfet_email_subject');
+				$email_info['from_email'] = get_option('cfet_email_from_address');
+				$email_info['from_name'] = get_option('cfet_email_from_name');
+				
+				/* Allow to change the email information */
+				$email_info = apply_filters('cfet_email_info', $email_info);
+				
 				if (!cfet_validate_fields($email_info)) {
 					// results already echo'd in validate function, just need to die
 					die();
@@ -342,8 +355,7 @@ function cfet_save_email($email_info) {
  * @return bool true on mail sent success, bool false on mail send error
 */
 function cfet_send_email($email_info) {
-	global $user_ID;
-	$user_data = get_userdata($user_ID);
+
 	
 	if (!class_exists('PHPMailer')) {
 		include_once(trailingslashit(ABSPATH).'wp-includes/class-phpmailer.php');
@@ -351,12 +363,12 @@ function cfet_send_email($email_info) {
  	$cfet_email = new PHPMailer();
 	$cfet_email->AddAddress($email_info['to_email'],$email_info['to_name']);
 	$cfet_email->IsMail();
-	$cfet_email->Subject = get_option('cfet_email_subject');
-	$cfet_email->From = get_option('cfet_email_from_address');
-	$cfet_email->FromName = get_option('cfet_email_from_name');
+	$cfet_email->Subject = $email_info['subject'];
+	$cfet_email->From = $email_info['from_email'];
+	$cfet_email->FromName = $email_info['from_name'];
 	$cfet_email->IsHTML(true);
-	$cfet_email->Body = cfet_make_html_msg(get_option('cfet_email_body'), $email_info, $user_data->user_nicename, $user_data->user_email);
-	$cfet_email->AltBody = cfet_make_text_msg(get_option('cfet_email_body'), $email_info, $user_data->user_nicename, $user_data->user_email);
+	$cfet_email->Body = cfet_make_html_msg(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
+	$cfet_email->AltBody = cfet_make_text_msg(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
 	if ($cfet_email->send()) {
 		echo '<h3>Message Sent Successfully!</h3>';
 		echo $cfet_email->ErrorInfo;
@@ -504,7 +516,7 @@ function cfet_get_email_this_window($cfet_post_id) {
 		</div>
 	';
 	$output = $script_output.' '.$html_output;
-	$output = apply_filters('cfet_email_this_form_setup', $output, $script_output, $html_output);
+	$output = apply_filters('cfet_email_this_form_setup', $output, $script_output, $html_output, $cfet_post_id);
 	return $output;
 }
 
@@ -523,11 +535,15 @@ function cfet_email_this_link($text = 'Email This!', $args = array('display_type
  * 		apply_filters('cfet_email_this_link',$output, $args);
 */
 function cfet_get_email_this_link($text = 'Email This!', $args = array('display_type' => 'thickbox')) {
+	if (!empty($args['link_class']) && !is_array($args['link_class'])) {
+		$args['link_class'] = explode(' ', $args['link_class']);
+	}
 	$scriptOutput = '';
 	if ($args['display_type']) {
 		switch ($args['display_type']) {
 			case 'thickbox':
-				$args['link_class'] = 'class="thickbox"';
+				if (!in_array('thickbox', $args['link_class']))
+				$args['link_class'][] = 'thickbox';
 				break;
 			case 'expand':
 				// This will be for a jQuery popdown section of the screen.  Not Yet implemented!
@@ -541,8 +557,8 @@ function cfet_get_email_this_link($text = 'Email This!', $args = array('display_
 	else {
 		$post_id = $post->ID;
 	}
-	$output = '<div class="cfet_email_this_link"><a href="'.trailingslashit(get_bloginfo('url')).'index.php?cf_action=email_this_window&amp;cfet_post_id='.$post_id.'&amp;width=320&amp;height=440" '.$args['link_class'].'>'.htmlspecialchars($text).'</a></div>';
-	$final_output = apply_filters('cfet_email_this_link',$output, $args);
+	$output = '<div class="cfet_email_this_link"><a href="'.trailingslashit(get_bloginfo('url')).'index.php?cf_action=email_this_window&amp;cfet_post_id='.$post_id.'&amp;width=320&amp;height=440" class="'.implode(' ', $args['link_class']).'">'.htmlspecialchars($text).'</a></div>';
+	$final_output = apply_filters('cfet_email_this_link',$output, $text, $args);
 	return $final_output;
 }
 
