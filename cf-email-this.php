@@ -561,6 +561,12 @@ function cfet_get_email_this_link($text = 'Email This!', $args = array('display_
 	if (!empty($args['link_class']) && !is_array($args['link_class'])) {
 		$args['link_class'] = explode(' ', $args['link_class']);
 	}
+	if (!empty($args['title'])) {
+		$title_att = attribute_escape($args['title']);
+	}
+	else {
+		$title_att = '';
+	}
 	$scriptOutput = '';
 	if ($args['display_type']) {
 		switch ($args['display_type']) {
@@ -580,7 +586,7 @@ function cfet_get_email_this_link($text = 'Email This!', $args = array('display_
 	else {
 		$post_id = $post->ID;
 	}
-	$output = '<div class="cfet_email_this_link"><a href="'.trailingslashit(get_bloginfo('url')).'index.php?cf_action=email_this_window&amp;cfet_post_id='.$post_id.'&amp;width=320&amp;height=440" class="'.implode(' ', $args['link_class']).'">'.htmlspecialchars($text).'</a></div>';
+	$output = '<div class="cfet_email_this_link"><a href="'.trailingslashit(get_bloginfo('url')).'index.php?cf_action=email_this_window&amp;cfet_post_id='.$post_id.'&amp;width=320&amp;height=440" class="'.implode(' ', $args['link_class']).'" title="'.$title_att.'">'.htmlspecialchars($text).'</a></div>';
 	$final_output = apply_filters('cfet_email_this_link',$output, $text, $args);
 	return $final_output;
 }
