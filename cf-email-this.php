@@ -228,6 +228,9 @@ function cfet_validate_fields($email_info) {
 		$errors[] = 'Valid email address required';
 	}
 	
+	/* Allow other plugins to validate additional fields */
+	$errors = apply_filters('cfet_validate_fields', $errors, $email_info);
+	
 	if (count($errors) == 0) {
 		return true;
 	}
@@ -253,6 +256,7 @@ function cfet_validate_fields($email_info) {
 			</ul>
 		</div>
 	';
+	$form_html = apply_filters('cfet_invalid_form_html', $form_html, false, false, $email_info['cfet_post_id'], $email_info);
 	echo $error_section.$form_html;
 	return false;
 }
@@ -538,7 +542,11 @@ function cfet_get_email_this_window($cfet_post_id) {
 			</form>
 		</div>
 	';
+	$script_output = apply_filters('cfet_email_this_form_script', $script_output);
+	$html_output = apply_filters('cfet_email_this_form_html', $html_output);
 	$output = $script_output.' '.$html_output;
+	
+	/* Allow entire form to be filtered. */
 	$output = apply_filters('cfet_email_this_form_setup', $output, $script_output, $html_output, $cfet_post_id);
 	return $output;
 }
