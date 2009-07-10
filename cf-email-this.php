@@ -557,28 +557,39 @@ function cfet_email_this_link($text = 'Email This!', $args = array('display_type
  * @filters
  * 		apply_filters('cfet_email_this_link',$output, $args);
 */
-function cfet_get_email_this_link($text = 'Email This!', $args = array('display_type' => 'thickbox')) {
+function cfet_get_email_this_link($text = 'Email This!', $args = array()) {
+	$defaults = array(
+		'display_type' => 'thickbox',
+		'link_class' => '',
+		'title' => '',
+		'width' => '320',
+		'height' => '440'
+	);
+	if (!is_array($args)) {
+		/* We need an array for the args */
+		return false;
+	}
+	
+	/* Override the defaults with the passed args */
+	$args = array_merge($defaults, $args);
+	
+	/* Allow for a string of classes, instead of an array */
 	if (!empty($args['link_class']) && !is_array($args['link_class'])) {
 		$args['link_class'] = explode(' ', $args['link_class']);
 	}
-	if (!empty($args['title'])) {
-		$title_att = attribute_escape($args['title']);
+	
+	/* Determine how we're going to be displaying the form */
+	switch ($args['display_type']) {
+		case 'thickbox':
+			if (!in_array('thickbox', $args['link_class']))
+			$args['link_class'][] = 'thickbox';
+			break;
+		case 'expand':
+			// This will be for a jQuery popdown section of the screen.  Not Yet implemented!
+			break;
 	}
-	else {
-		$title_att = '';
-	}
-	$scriptOutput = '';
-	if ($args['display_type']) {
-		switch ($args['display_type']) {
-			case 'thickbox':
-				if (!in_array('thickbox', $args['link_class']))
-				$args['link_class'][] = 'thickbox';
-				break;
-			case 'expand':
-				// This will be for a jQuery popdown section of the screen.  Not Yet implemented!
-				break;
-		}
-	}	
+	
+	/* Grab the post ID b/c typically we're emailing an article */
 	global $post;
 	if (!$post->ID) {
 		$post_id = 'none';
@@ -586,9 +597,14 @@ function cfet_get_email_this_link($text = 'Email This!', $args = array('display_
 	else {
 		$post_id = $post->ID;
 	}
-	$output = '<div class="cfet_email_this_link"><a href="'.trailingslashit(get_bloginfo('url')).'index.php?cf_action=email_this_window&amp;cfet_post_id='.$post_id.'&amp;width=320&amp;height=440" class="'.implode(' ', $args['link_class']).'" title="'.$title_att.'">'.htmlspecialchars($text).'</a></div>';
-	$final_output = apply_filters('cfet_email_this_link',$output, $text, $args);
-	return $final_output;
+	
+	$output = '
+		<div class="cfet_email_this_link">
+			<a 
+				href="'.trailingslashit(get_bloginfo('url')).'index.php?cf_action=email_this_window&amp;cfet_post_id='.$post_id.'&amp;width='.$args['width'].'&amp;height='.$args['height'].'" class="'.implode(' ', $args['link_class']).'" title="'.$args['title'].'">'.htmlspecialchars($text).'</a>
+		</div>';
+	$output = apply_filters('cfet_email_this_link',$output, $text, $args);
+	return $output;
 }
 
 wp_enqueue_script('jquery');
