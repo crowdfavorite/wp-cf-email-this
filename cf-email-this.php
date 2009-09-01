@@ -283,6 +283,8 @@ function cfet_validate_email_address($email) {
 	}
 	return true;
 }
+
+/*
 function cfet_compile_csv($start, $end) {
 	global $wpdb, $wpmu_version;
 	$conditions = '';	
@@ -336,6 +338,7 @@ function cfet_compile_csv($start, $end) {
 	restore_current_blog();
 	return $output;
 }
+*/
 
 /**
  * cfet_save_email
@@ -354,26 +357,26 @@ function cfet_save_email($email_info) {
 	else {
 		$cfet_post_id = $email_info['cfet_post_id'];
 	}
-	$sql = '
-		INSERT INTO '.CFET_TABLE_NAME.'
-		VALUES (
-			NULL,
-			"'.$user_ID.'",
-			"'.$wpdb->escape($email_info['to_name']).'", 
-			"'.$wpdb->escape($email_info['to_email']).'", 
-			"'.$site_id.'", 
-			"'.$blog_id.'", 
-			"'.$cfet_post_id.'",
-			"'.time().'"
-		)
-	';
-	$result = $wpdb->query($sql);
-	if ($result > 0) {
+	// $sql = '
+	// 	INSERT INTO '.CFET_TABLE_NAME.'
+	// 	VALUES (
+	// 		NULL,
+	// 		"'.$user_ID.'",
+	// 		"'.$wpdb->escape($email_info['to_name']).'", 
+	// 		"'.$wpdb->escape($email_info['to_email']).'", 
+	// 		"'.$site_id.'", 
+	// 		"'.$blog_id.'", 
+	// 		"'.$cfet_post_id.'",
+	// 		"'.time().'"
+	// 	)
+	// ';
+	// $result = $wpdb->query($sql);
+	// if ($result > 0) {
 		return true;
-	}
-	else {
-		return false;
-	}
+	// }
+	// else {
+	// 	return false;
+	// }
 }
 
 /**
@@ -455,7 +458,7 @@ function cfet_make_html_msg($html, $email_info, $from_name = '', $from_email = '
  * 		apply_filters('cfet_make_text_msg', $out, $html, $personal_msg, $personal_msg_header, $from_name = '', $from_email = '');
 */
 function cfet_make_text_msg($html, $email_info, $from_name = '', $from_email = '') {
-	error_log('start of text msg::'.$email_info['personal_msg']);
+	// error_log('start of text msg::'.$email_info['personal_msg']);
 	$post = get_post($email_info['cfet_post_id']);
 	$html = str_replace(array('###POST_TITLE###','###POST_CONTENT###'), array($post->post_title, $post->post_content), $html);
 	if (empty($email_info['personal_msg'])) {
@@ -589,8 +592,9 @@ function cfet_get_email_this_link($text = 'Email This!', $args = array()) {
 	/* Determine how we're going to be displaying the form */
 	switch ($args['display_type']) {
 		case 'thickbox':
-			if (!in_array('thickbox', $args['link_class']))
-			$args['link_class'][] = 'thickbox';
+			if (!is_array($args['link_class']) || !in_array('thickbox', $args['link_class'])){
+				$args['link_class'][] = 'thickbox';
+			}
 			break;
 		case 'expand':
 			// This will be for a jQuery popdown section of the screen.  Not Yet implemented!
@@ -760,9 +764,10 @@ function cfet_admin_css() {
 	die();
 }
 
+/* Addmin functions not needed for our purposes
 function cfet_admin_head() {
 	echo '<link rel="stylesheet" type="text/css" href="'.trailingslashit(get_bloginfo('siteurl')).'?cf_action=cfet_admin_css" />';
-	echo '<script type="text/javascript" src="'.trailingslashit(get_bloginfo('wpurl')).'wp-includes/js/tinymce/tiny_mce.js"></script>';
+	// echo '<script type="text/javascript" src="'.trailingslashit(get_bloginfo('wpurl')).'wp-includes/js/tinymce/tiny_mce.js"></script>';
 	echo '<script type="text/javascript" src="'.trailingslashit(get_bloginfo('siteurl')).'?cf_action=cfet_admin_js"></script>';
 	?>
 	<script type="text/javascript">
@@ -1184,8 +1189,9 @@ function cfet_retrieve_item_data($id, $page = false) {
 	$result['rows'] = $wpdb->get_results($sql);
 	return $result;
 }
+*/
 
-/**
+/*
  * cfet_post_meta_box
  *
  * Defines the post meta box for the admin screen
@@ -1193,7 +1199,7 @@ function cfet_retrieve_item_data($id, $page = false) {
  * @param string $post 
  * @param string $box 
  * @return void
-*/
+
 function cfet_post_meta_box($post, $box) {
 	$cfet_show_link = get_post_meta($post->ID, '_cfet_show_email_this_link', true);
 	$cfet_add_to_post_default = get_option('cfet_add_to_post_default');
@@ -1230,14 +1236,14 @@ function cfet_post_meta_box($post, $box) {
 	</div>
 	<?php
 }
-
-/**
+*/
+/*
  * cfet_add_custom_meta_box
  * 
  * Adds the meta boxes to the post and page admin screens
  *
  * @return void
-*/
+
 function cfet_add_custom_meta_box() {
 	global $wp_version;
 	//add post meta box here
@@ -1253,6 +1259,8 @@ function cfet_add_custom_meta_box() {
 if (CFET_ALLOW_POST_META_BOX) {
 	add_action('admin_init', 'cfet_add_custom_meta_box');
 }
+*/
+/*
 
 function cfet_get_popular_info($item, $results) {
 	global $wpdb;
@@ -1315,14 +1323,16 @@ function cfet_get_popular_info($item, $results) {
 	}
 	return $info;
 }
-/**
+*/
+
+/*
  * cfet_save_post_meta
  *
  * Updates the post meta accoring to $_POST variable or default option
  * 
  * @param $post_id 
  * @return void
-*/
+
 function cfet_save_post_meta($post_id) {
 	$post = get_post($post_id);
 	if (!$post || $post->post_type == 'revision') {
@@ -1347,6 +1357,7 @@ function cfet_get_sent_emails() {
 	$results = $wpdb->get_results($sql);
 	return $results;
 }
+*/
 
 /*
 $example_settings = array(
@@ -1450,7 +1461,7 @@ function cfet_admin_menu() {
 		}
 	}
 }
-add_action('admin_menu', 'cfet_admin_menu');
+// add_action('admin_menu', 'cfet_admin_menu');
 
 function cfet_plugin_action_links($links, $file) {
 	$plugin_file = basename(__FILE__);
