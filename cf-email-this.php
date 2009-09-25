@@ -399,12 +399,12 @@ function cfet_send_email($email_info) {
 	$cfet_email->Body = $email_info['body'];
 	$cfet_email->AltBody = $email_info['alt_body'];
 	if ($cfet_email->send()) {
-		echo '<h3>Message Sent Successfully!</h3>';
+		echo apply_filters('cfet_success_message', '<h3>Message Sent Successfully!</h3>');
 		echo $cfet_email->ErrorInfo;
 		return true;
 	}
 	else {
-		echo '<h3>I apologize, we had trouble sending your message, please try later.</h3>';
+		echo apply_filters('cfet_fail_message', '<h3>I apologize, we had trouble sending your message, please try later.</h3>');
 		echo $cfet_email->ErrorInfo;
 		return false;
 	}
