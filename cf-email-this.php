@@ -520,12 +520,12 @@ function cfet_get_email_this_window($cfet_post_id) {
 					"index.php", 
 					data, 
 					function(r){
-						jQuery("#email_this_div").html(r);
+						'.apply_filters('cfet_success_callback','jQuery("#email_this_div").html(r);
 						var error_div = jQuery("#cfet-error-list").html();
 						if ( error_div == null ) {
 							var t =  setTimeout("jQuery(\'#TB_window\').fadeOut(\'slow\',function(){jQuery(\'#TB_window,#TB_overlay,#TB_HideSelect\').trigger(\'unload\').unbind().remove();});",1750);
 						}
-						return false;
+						return false;').'
 					},
 					"html"
 				);
@@ -541,7 +541,7 @@ function cfet_get_email_this_window($cfet_post_id) {
 				<h3 class="inline-h3">'.htmlspecialchars(get_option('cfet_popup_personal_msg_header')).'</h3><span class="small">(optional)</span>
 				<p><textarea name="cfet_personal_message" id="cfet_personal_message"></textarea></p>
 				<p><input type="hidden" name="cfet_post_id" value="'.$cfet_post_id.'" /></p>
-				<p><input type="submit" name="cfet_submit_email_form" id="cfet_submit_email_form" value="send email" />&nbsp;&nbsp;<span class="small">or</span>&nbsp;&nbsp;<a href="cancel" onclick="tb_remove(); return false;"><span class="small">Cancel</span></a></p>
+				<p><input type="submit" name="cfet_submit_email_form" id="cfet_submit_email_form" value="send email" />&nbsp;&nbsp;<span class="small">or</span>&nbsp;&nbsp;<a href="cancel" onclick="'.apply_filters('cfet_form_cancel','tb_remove(); return false;').'"><span class="small">Cancel</span></a></p>
 			</form>
 		</div>
 	';
@@ -1461,7 +1461,7 @@ function cfet_admin_menu() {
 		}
 	}
 }
-// add_action('admin_menu', 'cfet_admin_menu');
+add_action('admin_menu', 'cfet_admin_menu');
 
 function cfet_plugin_action_links($links, $file) {
 	$plugin_file = basename(__FILE__);
