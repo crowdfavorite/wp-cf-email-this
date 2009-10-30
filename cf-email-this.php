@@ -497,7 +497,7 @@ function cfet_get_email_this_window($cfet_post_id) {
 		<script type="text/javascript">
 			//////// Validate email address now ///////
 			// thanks to http://homepage.ntlworld.com/kayseycarvey/jss3p7.html for the base of the function //
-			function checkEmail(email) {
+			checkEmail = function(email) {
 				AtPos = email.indexOf("@")
 				StopPos = email.lastIndexOf(".")
 				if ((email == "") || (AtPos == -1 || StopPos == -1) || (StopPos < AtPos) || (StopPos - AtPos == 1)) {
@@ -506,7 +506,7 @@ function cfet_get_email_this_window($cfet_post_id) {
 				return true;
 			}
 			//////////////////////////////////////////////
-			function cfet_jquery_send_email(toName, toEmail, personalMsg, postID) {
+			cfet_jquery_send_email = function(toName, toEmail, personalMsg, postID) {
 				data = {cf_action:"cfet_send_email", to_name:toName, to_email:toEmail, personal_msg:personalMsg, cfet_post_id:postID};
 				if (toName == "" || toEmail == "") {
 					alert("Both name and address fields are required.\n\nPlease try again.");
