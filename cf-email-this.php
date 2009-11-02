@@ -680,6 +680,16 @@ function cfet_admin_css() {
 		margin-right: 10px;
 		width: 150px;
 	}
+	fieldset.options div.option input {
+		width: 500px;
+	}
+	fieldset.options div.option textarea {
+		width: 510px;
+		height: 300px;
+	}
+	fieldset.options div.option input.autowidth {
+		width: auto;
+	}
 	fieldset.options div.option span.help {
 		color: #666;
 		font-size: 11px;
@@ -763,6 +773,16 @@ function cfet_admin_css() {
 	<?php 
 	die();
 }
+
+// Admin Head
+	function cfet_admin_head() {
+		echo '<link rel="stylesheet" type="text/css" href="'.trailingslashit(get_bloginfo('siteurl')).'?cf_action=cfet_admin_css" />';
+		echo '<script type="text/javascript" src="'.trailingslashit(get_bloginfo('siteurl')).'?cf_action=cfet_admin_js"></script>';
+		
+	}
+	if($_GET['page'] == 'cf-email-this.php') {
+		add_action('admin_head','cfet_admin_head');
+	}
 
 /* Addmin functions not needed for our purposes
 function cfet_admin_head() {
@@ -1536,8 +1556,8 @@ function cfet_settings_form() {
 	print('
 		<div class="option">
 			<label class="left_label">Add Link to post (Default Setting):</label>
-			<input type="radio" name="cfet_add_to_post_default" id="cfet_add_to_post_default_yes" value="yes" '.$cfet_default_yes.' /><label for="cfet_add_to_post_default_yes" class="admin_unlabel"> yes </label>
-			&nbsp;&nbsp;<input type="radio" name="cfet_add_to_post_default" id="cfet_add_to_post_default_no" value="no" '.$cfet_default_no.' /><label for="cfet_add_to_post_default_no" class="admin_unlabel"> no </label>
+			<input class="autowidth" type="radio" name="cfet_add_to_post_default" id="cfet_add_to_post_default_yes" value="yes" '.$cfet_default_yes.' /><label for="cfet_add_to_post_default_yes" class="admin_unlabel"> yes </label>
+			&nbsp;&nbsp;<input class="autowidth" type="radio" name="cfet_add_to_post_default" id="cfet_add_to_post_default_no" value="no" '.$cfet_default_no.' /><label for="cfet_add_to_post_default_no" class="admin_unlabel"> no </label>
 		</div>
 		');
 	print('
