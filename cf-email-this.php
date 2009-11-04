@@ -265,22 +265,12 @@ function cfet_validate_email_address($email) {
 	if (empty($email)) {
 		return false;
 	}
-	$length = strlen($email);
-	$at_sign = strpos($email, '@');
-	$last_dot = strrpos($email , '.');
 	
-	/* 
-	* CONDITIONS TO CHECK
-	* there's an "@" symbol
-	* there's at least one "."
-	* the last period comes after the "@" symbol
-	* the "@" symbol is not the first character
-	* the "." is not the last character
-	* there's at least one character between the "@" symbol and the last "."
-	*/
-	if ($at_sign === false || $last_dot === false || $at_sign >= $last_dot || $at_sign == 0 || $last_dot == ($length - 1) || ($last_dot - $at_sign) <= 1) {
+	// more complex email matching
+	if (preg_match('|^[a-z0-9]+([\._a-z0-9-]+)*@[a-z0-9]+([\._a-z0-9-]+)*(\.[a-z]{2,8})$|i',$email) !== 1) {
 		return false;
 	}
+	
 	return true;
 }
 
