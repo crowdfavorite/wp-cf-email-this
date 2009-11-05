@@ -267,7 +267,7 @@ function cfet_validate_email_address($email) {
 	}
 	
 	// more complex email matching
-	if (preg_match('|^[a-z0-9]+([\._a-z0-9-]+)*@[a-z0-9]+([\._a-z0-9-]+)*(\.[a-z]{2,8})$|i',$email) !== 1) {
+	if (preg_match('|^[a-z0-9]+([\+\._a-z0-9-]+)*@[a-z0-9]+([\._a-z0-9-]+)*(\.[a-z]{2,8})$|i',$email) !== 1) {
 		return false;
 	}
 	
@@ -418,12 +418,14 @@ function cfet_make_html_msg($html, $email_info, $from_name = '', $from_email = '
 	$find = array(
 		'###POST_TITLE###',
 		'###POST_CONTENT###',
-		'###POST_EXCERPT###'
+		'###POST_EXCERPT###',
+		'###POST_PERMALINK###'
 	);
 	$replace = array(
 		$post->post_title, 
-		str_replace(array("\n","\n\n"),'</p><p>',$post->post_content),
-		apply_filters('get_the_excerpt',$post->post_excerpt)
+		str_replace(array("\n","\n\n"),'</p><p>',wp_specialchars($post->post_content)),
+		apply_filters('get_the_excerpt',$post->post_excerpt),
+		'Full article: <a href="'.get_permalink($post->ID).'">'.wp_specialchars($post->post_title).'</a>'
 	);
 	$html = str_replace($find, $replace, $html);
 	if (empty($email_info['personal_msg'])) {
@@ -438,7 +440,7 @@ function cfet_make_html_msg($html, $email_info, $from_name = '', $from_email = '
 			$personal_msg_header = str_replace(array('###FROM_NAME###', '###FROM_EMAIL###'), array($from_name, $from_email), $personal_msg_header);
 		}
 		$personal_msg_section = '<hr />';
-		$personal_msg_section .= '<h3>'.htmlspecialchars($personal_msg_header).'</h3>';
+		$personal_msg_section .= '<h3>'.wp_specialchars($personal_msg_header).'</h3>';
 		$personal_msg_section .= '<p>'.str_replace(array("\n","\n\n"),'</p><p>',$email_info['personal_msg']).'</p>';
 	}
 	$html = '<html><body>'.str_replace('###PERSONAL_MESSAGE###',$personal_msg_section, $html).'</body></html>';
@@ -463,12 +465,14 @@ function cfet_make_text_msg($html, $email_info, $from_name = '', $from_email = '
 	$find = array(
 		'###POST_TITLE###',
 		'###POST_CONTENT###',
-		'###POST_EXCERPT###'
+		'###POST_EXCERPT###',
+		'###POST_PERMALINK###'
 	);
 	$replace = array(
 		$post->post_title, 
 		$post->post_content,
-		apply_filters('get_the_excerpt',$post->post_excerpt)
+		apply_filters('get_the_excerpt',wp_specialchars($post->post_excerpt)),
+		get_permalink($post->ID)
 	);
 	$html = str_replace($find, $replace, $html);
 	if (empty($email_info['personal_msg'])) {
@@ -476,7 +480,7 @@ function cfet_make_text_msg($html, $email_info, $from_name = '', $from_email = '
 		$out = str_replace("###PERSONAL_MESSAGE### ",'',$out);
 		return $out;
 	}
-	$personal_msg_header = htmlspecialchars(get_option('cfet_email_personal_msg_header'));
+	$personal_msg_header = wp_specialchars(get_option('cfet_email_personal_msg_header'));
 	if (!$personal_msg_header) {
 		$personal_msg_header = "Here's a message from your friend";
 	}
@@ -666,7 +670,7 @@ function cfet_admin_js() {
 	
 	jQuery(document).ready(function(){
 		jQuery("#cfet_settings_form input[type=text]").css("width","250px");
-		jQuery("#cfet_email_body").parent().append('<label class="left_label">&nbsp;</label><span class="sidenote">Variables: ###POST_TITLE###, ###POST_CONTENT###, ###PERSONAL_MESSAGE###</span>');
+		jQuery("#cfet_email_body").parent().append('<label class="left_label">&nbsp;</label><span class="sidenote">Variables: ###POST_TITLE###, ###POST_CONTENT###, ###POST_EXCERPT###, ###POST_PERMALINK###, ###PERSONAL_MESSAGE###</span>');
 		jQuery("#cfet_email_personal_msg_header").css("width",(maxWidth-10)+"px").after('<br /><span class="sidenote">You can use ###FROM_NAME### or ###FROM_EMAIL### to use the values that the visitor enters</span>');
 	});
 	-->
@@ -786,9 +790,9 @@ function cfet_admin_css() {
 
 // Admin Head
 	function cfet_admin_head() {
+		echo '<script type="text/javascript" src="'.trailingslashit(get_bloginfo('wpurl')).'wp-includes/js/tinymce/tiny_mce.js"></script>';
 		echo '<link rel="stylesheet" type="text/css" href="'.trailingslashit(get_bloginfo('siteurl')).'?cf_action=cfet_admin_css" />';
 		echo '<script type="text/javascript" src="'.trailingslashit(get_bloginfo('siteurl')).'?cf_action=cfet_admin_js"></script>';
-		
 	}
 	if($_GET['page'] == 'cf-email-this.php') {
 		add_action('admin_head','cfet_admin_head');
