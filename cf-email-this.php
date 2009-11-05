@@ -415,7 +415,17 @@ function cfet_send_email($email_info) {
 */
 function cfet_make_html_msg($html, $email_info, $from_name = '', $from_email = '') {
 	$post = get_post($email_info['cfet_post_id']);
-	$html = str_replace(array('###POST_TITLE###','###POST_CONTENT###'), array($post->post_title, str_replace(array("\n","\n\n"),'</p><p>',$post->post_content)), $html);
+	$find = array(
+		'###POST_TITLE###',
+		'###POST_CONTENT###',
+		'###POST_EXCERPT###'
+	);
+	$replace = array(
+		$post->post_title, 
+		str_replace(array("\n","\n\n"),'</p><p>',$post->post_content),
+		apply_filters('get_the_excerpt',$post->post_excerpt)
+	);
+	$html = str_replace($find, $replace, $html);
 	if (empty($email_info['personal_msg'])) {
 		$personal_msg_section = '';
 	}
@@ -450,7 +460,17 @@ function cfet_make_html_msg($html, $email_info, $from_name = '', $from_email = '
 function cfet_make_text_msg($html, $email_info, $from_name = '', $from_email = '') {
 	// error_log('start of text msg::'.$email_info['personal_msg']);
 	$post = get_post($email_info['cfet_post_id']);
-	$html = str_replace(array('###POST_TITLE###','###POST_CONTENT###'), array($post->post_title, $post->post_content), $html);
+	$find = array(
+		'###POST_TITLE###',
+		'###POST_CONTENT###',
+		'###POST_EXCERPT###'
+	);
+	$replace = array(
+		$post->post_title, 
+		$post->post_content,
+		apply_filters('get_the_excerpt',$post->post_excerpt)
+	);
+	$html = str_replace($find, $replace, $html);
 	if (empty($email_info['personal_msg'])) {
 		$out = str_replace("\n","\n\n",str_replace("\n\n","\n",strip_tags($html)));
 		$out = str_replace("###PERSONAL_MESSAGE### ",'',$out);
