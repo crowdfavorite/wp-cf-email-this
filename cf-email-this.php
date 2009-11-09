@@ -182,8 +182,10 @@ function cfet_request_handler() {
 				$email_info = apply_filters('cfet_email_info', $email_info);
 				
 				/* Put together email's body */
-				$email_info['body'] = cfet_make_html_msg(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
-				$email_info['alt_body'] = cfet_make_text_msg(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
+				// $email_info['body'] = cfet_make_html_msg(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
+				// $email_info['alt_body'] = cfet_make_text_msg(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
+				$email_info['body'] = cfet_make_message(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
+				$email_info['alt_body'] = cfet_make_message(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email,true);
 				
 				/* validate then send */
 				if (!cfet_validate_fields($email_info)) {
@@ -400,21 +402,30 @@ function cfet_send_email($email_info) {
 	}
 }
 
+function cfet_get_the_excerpt($excerpt,$post_content) {
+	$excerpt = trim($excerpt);
+	if((empty($excerpt) || $excerpt == '<br />')) {
+		$excerpt = strip_tags($post_content);
+		if(strlen($excerpt) > 500) {
+			$excerpt = substr($excerpt, 0, 500).'[&hellip;]';
+		}
+	}
+	return $excerpt;
+}
+
 /**
- * cfet_make_html_msg
- * 
- * Formats the email message set in the admin screen options for HTML
+ * Single function for producing messages
  *
- * @param string $html - the html from the options page
- * @param array $email_info - the array of all the email information on who/what/where to send the message
+ * @param string $html 
+ * @param array $email_info 
  * @param string $from_name 
  * @param string $from_email 
- * @return string $out
- * @filters 
- * 		apply_filters('cfet_make_html_msg', $html, $email_info, $personal_msg_header, $personal_msg_section, $from_name, $from_email);
-*/
-function cfet_make_html_msg($html, $email_info, $from_name = '', $from_email = '') {
+ * @param bool $convert_to_text 
+ * @return string
+ */
+function cfet_make_message($html, $email_info, $from_name = '', $from_email = '', $convert_to_text = false) {
 	$post = get_post($email_info['cfet_post_id']);
+	
 	$find = array(
 		'###POST_TITLE###',
 		'###POST_CONTENT###',
@@ -422,12 +433,14 @@ function cfet_make_html_msg($html, $email_info, $from_name = '', $from_email = '
 		'###POST_PERMALINK###'
 	);
 	$replace = array(
-		$post->post_title, 
-		str_replace(array("\n","\n\n"),'</p><p>',wp_specialchars($post->post_content)),
-		apply_filters('get_the_excerpt',$post->post_excerpt),
+		sanitize_title($post->post_title), 
+		apply_filters('the_content',$post->post_content),
+		cfet_get_the_excerpt($post->post_excerpt,$post->post_content),
 		'Full article: <a href="'.get_permalink($post->ID).'">'.wp_specialchars($post->post_title).'</a>'
 	);
+	
 	$html = str_replace($find, $replace, $html);
+	
 	if (empty($email_info['personal_msg'])) {
 		$personal_msg_section = '';
 	}
@@ -441,58 +454,31 @@ function cfet_make_html_msg($html, $email_info, $from_name = '', $from_email = '
 		}
 		$personal_msg_section = '<hr />';
 		$personal_msg_section .= '<h3>'.wp_specialchars($personal_msg_header).'</h3>';
-		$personal_msg_section .= '<p>'.str_replace(array("\n","\n\n"),'</p><p>',$email_info['personal_msg']).'</p>';
+		$personal_msg_section .= '<p>'.nl2br($email_info['personal_msg']).'</p>';
 	}
+	
 	$html = '<html><body>'.str_replace('###PERSONAL_MESSAGE###',$personal_msg_section, $html).'</body></html>';
-	return apply_filters('cfet_make_html_msg', $html, $email_info, $personal_msg_header, $personal_msg_section, $from_name, $from_email);
-}
 
-/**
- * cfet_make_text_msg
- *
- * Formats the email message set in the admin screen, and returns a plain text
- * email msg for the alternate portion of the email message.
- * 
- * @param string $html 
- * @param string $personal_msg 
- * @return string $out
- * @filters 
- * 		apply_filters('cfet_make_text_msg', $out, $html, $personal_msg, $personal_msg_header, $from_name = '', $from_email = '');
-*/
-function cfet_make_text_msg($html, $email_info, $from_name = '', $from_email = '') {
-	// error_log('start of text msg::'.$email_info['personal_msg']);
-	$post = get_post($email_info['cfet_post_id']);
-	$find = array(
-		'###POST_TITLE###',
-		'###POST_CONTENT###',
-		'###POST_EXCERPT###',
-		'###POST_PERMALINK###'
-	);
-	$replace = array(
-		$post->post_title, 
-		$post->post_content,
-		apply_filters('get_the_excerpt',wp_specialchars($post->post_excerpt)),
-		get_permalink($post->ID)
-	);
-	$html = str_replace($find, $replace, $html);
-	if (empty($email_info['personal_msg'])) {
-		$out = str_replace("\n","\n\n",str_replace("\n\n","\n",strip_tags($html)));
-		$out = str_replace("###PERSONAL_MESSAGE### ",'',$out);
-		return $out;
+	if($convert_to_text) {
+		$text_find = array(
+			'<hr />',
+			'<hr>',
+			'<br />',
+			'<br>'
+		);
+		$text_replace = array(
+			'----------',
+			'----------',
+			"\n",
+			"\n"
+		);
+		$html = str_replace($text_find,$text_replace,$html);
+		$html = preg_replace('/<a href="(.*?)">(.*?)<\/a>/','$2 ($1)',$html);
+		$html = wp_specialchars_decode(strip_tags($html), ENT_QUOTES);
+		$html = html_entity_decode($html);
 	}
-	$personal_msg_header = wp_specialchars(get_option('cfet_email_personal_msg_header'));
-	if (!$personal_msg_header) {
-		$personal_msg_header = "Here's a message from your friend";
-	}
-	else {
-		$personal_msg_header = str_replace(array('###FROM_NAME###', '###FROM_EMAIL###'), array($from_name, $from_email), $personal_msg_header);
-	}
-	$separator = "\n".'-------------------------------'."\n";
-	$personal_msg_header .= "\n";
-	$personal_msg_section = $separator.$personal_msg_header.$email_info['personal_msg'].$separator;
-	$html = str_replace('###PERSONAL_MESSAGE### ',$personal_msg_section,html_entity_decode($html));
-	$out = str_replace("\n","\n\n",str_replace("\n\n","\n",strip_tags($html)));
-	return apply_filters('cfet_make_text_msg', $out, $html, $email_info, $personal_msg_header, $from_name, $from_email);
+
+	return apply_filters('cfet_make_message', $html, $email_info, $personal_msg_header, $personal_msg_section, $from_name, $from_email, $convert_to_text);
 }
 
 wp_enqueue_script('thickbox');
