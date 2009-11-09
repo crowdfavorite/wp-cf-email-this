@@ -182,8 +182,6 @@ function cfet_request_handler() {
 				$email_info = apply_filters('cfet_email_info', $email_info);
 				
 				/* Put together email's body */
-				// $email_info['body'] = cfet_make_html_msg(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
-				// $email_info['alt_body'] = cfet_make_text_msg(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
 				$email_info['body'] = cfet_make_message(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email);
 				$email_info['alt_body'] = cfet_make_message(get_option('cfet_email_body'), $email_info, $email_info['user_data']->user_nicename, $email_info['user_data']->user_email,true);
 				
