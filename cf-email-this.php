@@ -479,8 +479,13 @@ function cfet_make_message($html, $email_info, $from_name = '', $from_email = ''
 	return apply_filters('cfet_make_message', $html, $email_info, $personal_msg_header, $personal_msg_section, $from_name, $from_email, $convert_to_text);
 }
 
-wp_enqueue_script('thickbox');
-wp_enqueue_style('thickbox');
+function cfet_enqueue_thickbox() {
+	if (true == apply_filters('cfet_enqueue_thickbox',true)) {
+		wp_enqueue_script('thickbox');
+		wp_enqueue_style('thickbox');
+	}
+}
+add_action('init','cfet_enqueue_thickbox');
 
 /**
  * cfet_get_email_this_window
