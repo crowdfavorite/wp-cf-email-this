@@ -431,7 +431,7 @@ function cfet_make_message($html, $email_info, $from_name = '', $from_email = ''
 		'###POST_PERMALINK###'
 	);
 	$replace = array(
-		sanitize_title($post->post_title), 
+		esc_html($post->post_title), 
 		apply_filters('the_content',$post->post_content),
 		cfet_get_the_excerpt($post->post_excerpt,$post->post_content),
 		'Full article: <a href="'.get_permalink($post->ID).'">'.wp_specialchars($post->post_title).'</a>'
